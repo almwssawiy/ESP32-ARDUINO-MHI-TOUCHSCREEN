@@ -1,0 +1,68 @@
+
+#include <Arduino.h>
+
+// تحويل الإرسال إلى السيريال الرئيسي (Serial) المرتبط بفتحة الـ UART العتادية
+bool toggleCommand = false;
+
+void setup() {
+  // فتح السيريال الرئيسي بسرعة 9600 لتطابق الأردوينو تماماً عبر السلك الأبيض
+  Serial.begin(9600);                        
+  delay(1000);
+}
+
+void loop() 
+{
+  toggleCommand = !toggleCommand;
+  
+  if (toggleCommand)
+{
+    Serial.print('1'); // إرسال حرف 1 الصافي للأردوينو
+} 
+else 
+{
+Serial.print('0'); // إرسال حرف 0 الصافي للأردوينو
+}
+  
+  // التناوب التلقائي كل ثانيتين
+  delay(2000); 
+}
+
+
+
+
+
+
+
+
+
+#include <Arduino.h>
+
+#define RXD2 16  
+#define TXD2 17  
+
+bool toggleCommand = false;
+
+void setup() {
+  Serial.begin(115200);                        
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); 
+  Serial.println("--- ESP32 CHAR TRANSMITTER READY ---"); 
+}
+
+void loop() {
+  toggleCommand = !toggleCommand;
+  
+  if (toggleCommand) {
+    Serial2.print('1'); // إرسال حرف التشغيل الصافي وبدون سطر جديد
+    Serial.println(">> Sent Character: 1 (ON)");
+  } else {
+    Serial2.print('0'); // إرسال حرف الإطفاء الصافي
+    Serial.println(">> Sent Character: 0 (OFF)");
+  }
+  
+  // الوميض والتناوب سيحدث بانتظام كل ثانيتين تلقائياً
+  delay(2000); 
+}
+
+
+
+

@@ -1,0 +1,407 @@
+
+#include <SPI.h>
+#include <TFT_eSPI.h> 
+#include <XPT2046_Touchscreen.h> 
+
+// تعريف دبابيس اللمس والإضاءة الخلفية للوحة الصفراء 4.0 إنش
+#define TOUCH_CS  33
+#define TOUCH_IRQ 36
+#define BL_PIN    27  // دبوس الإضاءة الخلفية (Backlight)
+
+XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
+TFT_eSPI tft = TFT_eSPI(); 
+
+const int btnW = 140;
+const int btnH = 70;
+const int btnY = 130;
+const int btnOnX = 60;   
+const int btnOffX = 260; 
+
+void drawButtons() {
+  // زر التشغيل الأخضر
+  tft.fillRoundRect(btnOnX, btnY, btnW, btnH, 10, TFT_GREEN);
+  tft.setTextColor(TFT_BLACK);
+  tft.setTextSize(3);
+  tft.drawCentreString("ON", btnOnX + (btnW/2), btnY + (btnH/2) - 10, 1);
+  
+  // زر الإطفاء الأحمر
+  tft.fillRoundRect(btnOffX, btnY, btnW, btnH, 10, TFT_RED);
+  tft.setTextColor(TFT_WHITE);
+  tft.drawCentreString("OFF", btnOffX + (btnW/2), btnY + (btnH/2) - 10, 1);
+}
+
+void setup() {
+  Serial.begin(9600); 
+  
+  // ⚡ تشغيل الإضاءة الخلفية للشاشة فوراً
+  pinMode(BL_PIN, OUTPUT);
+  digitalWrite(BL_PIN, HIGH); 
+  
+  // تشغيل الشاشة واللمس
+  tft.init();
+  tft.setRotation(1); 
+  tft.fillScreen(TFT_BLACK);
+  
+  ts.begin();
+  ts.setRotation(1); 
+  
+  // العنوان
+  tft.setTextColor(TFT_WHITE);
+  tft.setTextSize(2);
+  tft.drawCentreString("TOUCH CONTROL PANEL", 240, 40, 1);
+  
+  drawButtons();
+}
+
+void loop() {
+  if (ts.touched()) {
+    TS_Point p = ts.getPoint();
+    
+    // تحويل قيم اللمس إلى أبعاد الشاشة الحقيقية
+    int touchX = map(p.x, 200, 3700, 0, 480);
+    int touchY = map(p.y, 250, 3800, 0, 320);
+    
+    // فحص ضغط زر ON
+    if ((touchX >= btnOnX && touchX <= (btnOnX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('1'); 
+      tft.drawRoundRect(btnOnX, btnY, btnW, btnH, 10, TFT_WHITE); 
+      delay(300);
+      drawButtons();
+    }
+    
+    // فحص ضغط زر OFF
+    if ((touchX >= btnOffX && touchX <= (btnOffX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('0'); 
+      tft.drawRoundRect(btnOffX, btnY, btnW, btnH, 10, TFT_WHITE); 
+      delay(300);
+      drawButtons();
+    }
+  }
+ 
+}
+
+
+
+
+
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+#include <XPT2046_Touchscreen.h>
+
+// تعريف الدبابيس العتادية الدقيقة للشاشة الصفراء 4.0 إنش
+#define TFT_CS   15
+#define TFT_DC   2
+#define TFT_RST  4
+#define BL_PIN   27  // دبوس الإضاءة الخلفية
+#define TOUCH_CS 33
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+XPT2046_Touchscreen ts(TOUCH_CS);
+
+// إحداثيات وأبعاد الأزرار (الشاشة بأبعاد 320x240 في وضع التدوير)
+const int btnW = 100;
+const int btnH = 60;
+const int btnY = 110;
+const int btnOnX = 40;   // زر ON
+const int btnOffX = 180; // زر OFF
+
+void drawButtons() {
+  // رسم زر ON الأخضر
+  tft.fillRoundRect(btnOnX, btnY, btnW, btnH, 8, ILI9341_GREEN);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setTextSize(3);
+  tft.setCursor(btnOnX + 30, btnY + 18);
+  tft.print("ON");
+  
+  // رسم زر OFF الأحمر
+  tft.fillRoundRect(btnOffX, btnY, btnW, btnH, 8, ILI9341_RED);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(btnOffX + 25, btnY + 18);
+  tft.print("OFF");
+}
+
+void setup() {
+  Serial.begin(9600); // إرسال الإشارة للأردوينو
+  
+  // تشغيل الإضاءة الخلفية
+  pinMode(BL_PIN, OUTPUT);
+  digitalWrite(BL_PIN, HIGH);
+  
+  // تهيئة الشاشة وتدويرها بالعرض
+  tft.begin();
+  tft.setRotation(1); 
+  tft.fillScreen(ILI9341_BLACK);
+  
+  // تهيئة اللمس
+  ts.begin();
+  ts.setRotation(1);
+  
+  // طباعة العنوان
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(40, 40);
+  tft.print("TOUCH CONTROL PANEL");
+  
+  drawButtons();
+}
+
+void loop() {
+  if (ts.touched()) {
+    TS_Point p = ts.getPoint();
+    
+    // معايرة اللمس وتحويله لأبعاد الشاشة (320x240)
+    int touchX = map(p.x, 200, 3800, 0, 320);
+    int touchY = map(p.y, 200, 3800, 0, 240);
+    
+    // فحص ضغط زر ON
+    if ((touchX >= btnOnX && touchX <= (btnOnX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('1'); // إرسال حرف التشغيل للأردوينو
+      tft.drawRoundRect(btnOnX, btnY, btnW, btnH, 8, ILI9341_WHITE); // تأثير بصري سرييع
+      delay(300);
+      drawButtons();
+    }
+    
+    // فحص ضغط زر OFF
+    if ((touchX >= btnOffX && touchX <= (btnOffX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('0'); // إرسال حرف الإطفاء للأردوينو
+      tft.drawRoundRect(btnOffX, btnY, btnW, btnH, 8, ILI9341_WHITE);
+      delay(300);
+      drawButtons();
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+#include <XPT2046_Touchscreen.h>
+
+// الدبابيس الهندسية الحتمية للوحة الصفراء 4.0 إنش
+#define TFT_CS   15
+#define TFT_DC    2
+#define TFT_RST  -1  // تعيينه كـ -1 يحل مشكلة تعليق الشاشة البيضاء عتادياً
+#define BL_PIN   27  // دبوس الإضاءة الخلفية
+#define TOUCH_CS 33
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+XPT2046_Touchscreen ts(TOUCH_CS);
+
+// إحداثيات الأزرار المتوافقة تماماً
+const int btnW = 100;
+const int btnH = 60;
+const int btnY = 110;
+const int btnOnX = 40;   
+const int btnOffX = 180; 
+
+void drawButtons() {
+  // زر ON الأخضر
+  tft.fillRoundRect(btnOnX, btnY, btnW, btnH, 8, ILI9341_GREEN);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setTextSize(3);
+  tft.setCursor(btnOnX + 30, btnY + 18);
+  tft.print("ON");
+  
+  // زر OFF الأحمر
+  tft.fillRoundRect(btnOffX, btnY, btnW, btnH, 8, ILI9341_RED);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(btnOffX + 25, btnY + 18);
+  tft.print("OFF");
+}
+
+void setup() {
+  Serial.begin(9600); // إرسال نبضات التحكم للأردوينو
+  
+  // تفعيل وتشغيل نبضة الإضاءة الخلفية
+  pinMode(BL_PIN, OUTPUT);
+  digitalWrite(BL_PIN, HIGH);
+  
+  // تشغيل الشاشة بالدبابيس الجديدة وتلوين الخلفية فوراً بالأسود
+  tft.begin();
+  tft.setRotation(1); 
+  tft.fillScreen(ILI9341_BLACK);
+  
+  // تشغيل اللمس
+  ts.begin();
+  ts.setRotation(1);
+  
+  // طباعة واجهة التحكم
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(40, 40);
+  tft.print("TOUCH CONTROL PANEL");
+  
+  drawButtons();
+}
+
+void loop() {
+  if (ts.touched()) {
+    TS_Point p = ts.getPoint();
+    
+    // معايرة اللمس الحقيقي المتوافق مع الأبعاد
+    int touchX = map(p.x, 200, 3800, 0, 320);
+    int touchY = map(p.y, 200, 3800, 0, 240);
+    
+    if ((touchX >= btnOnX && touchX <= (btnOnX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('1'); 
+      tft.drawRoundRect(btnOnX, btnY, btnW, btnH, 8, ILI9341_WHITE); 
+      delay(300);
+      drawButtons();
+    }
+    
+    if ((touchX >= btnOffX && touchX <= (btnOffX + btnW)) && (touchY >= btnY && touchY <= (btnY + btnH))) {
+      Serial.print('0'); 
+      tft.drawRoundRect(btnOffX, btnY, btnW, btnH, 8, ILI9341_WHITE);
+      delay(300);
+      drawButtons();
+    }
+  }
+}
+
+
+
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
+
+// إعداد دبابيس الشاشة واللمس عتادياً للوحة الصفراء 4.0 إنش (ST7796)
+class LGFX_ESP32_3248S040 : public lgfx::LGFX_Device {
+  lgfx::Panel_ST7796  _panel_instance;
+  lgfx::Bus_SPI       _bus_instance;
+  lgfx::Light_PWM     _light_instance;
+  lgfx::Touch_XPT2046 _touch_instance;
+
+public:
+  LGFX_ESP32_3248S040() {
+    {
+      auto cfg = _bus_instance.config();
+      cfg.spi_host = VSPI_HOST;
+      cfg.spi_mode = 0;
+      cfg.freq_write = 40000000;
+      cfg.pin_sclk = 14;
+      cfg.pin_mosi = 13;
+      cfg.pin_miso = 12;
+      cfg.pin_dc   = 2;
+      _bus_instance.config(cfg);
+      _panel_instance.setBus(&_bus_instance);
+    }
+    {
+      auto cfg = _panel_instance.config();
+      cfg.pin_cs           = 15;
+      cfg.pin_rst          = -1;
+      cfg.panel_width      = 320;
+      cfg.panel_height     = 480;
+      cfg.offset_x         = 0;
+      cfg.offset_y         = 0;
+      _panel_instance.config(cfg);
+    }
+    {
+      auto cfg = _light_instance.config();
+      cfg.pin_bl = 27; // دبوس الإضاءة الخلفية
+      _light_instance.config(cfg);
+      _panel_instance.setLight(&_light_instance);
+    }
+    {
+      auto cfg = _touch_instance.config();
+      cfg.x_min      = 300;
+      cfg.x_max      = 3900;
+      cfg.y_min      = 200;
+      cfg.y_max      = 3800;
+      cfg.pin_cs     = 33;
+      cfg.spi_host   = VSPI_HOST;
+      cfg.bus_shared = true;
+      _touch_instance.config(cfg);
+      _panel_instance.setTouch(&_touch_instance);
+    }
+    setPanel(&_panel_instance);
+  }
+};
+
+LGFX_ESP32_3248S040 lcd;
+
+// أبعاد الواجهة والأزرار في الوضع العرضي (480x320)
+const int btnW = 140;
+const int btnH = 70;
+const int btnY = 130;
+const int btnOnX = 60;   
+const int btnOffX = 260; 
+
+void drawButtons() {
+  // رسم زر ON الأخضر
+  lcd.fillRoundRect(btnOnX, btnY, btnW, btnH, 10, TFT_GREEN);
+  lcd.setTextColor(TFT_BLACK);
+  lcd.setTextSize(3);
+  lcd.drawCenterString("ON", btnOnX + (btnW/2), btnY + (btnH/2) - 10);
+  
+  // رسم زر OFF الأحمر
+  lcd.fillRoundRect(btnOffX, btnY, btnW, btnH, 10, TFT_RED);
+  lcd.setTextColor(TFT_WHITE);
+  lcd.drawCenterString("OFF", btnOffX + (btnW/2), btnY + (btnH/2) - 10);
+}
+
+void setup() {
+  Serial.begin(9600); // فتح منفذ الإرسال للأردوينو
+  
+  lcd.init();
+  lcd.setRotation(1); // تدوير الشاشة لوضع العرض الأفقي الصافي
+  lcd.fillScreen(TFT_BLACK);
+  
+  // طباعة العنوان
+  lcd.setTextColor(TFT_WHITE);
+  lcd.setTextSize(2);
+  lcd.drawCenterString("TOUCH CONTROL PANEL", 240, 40);
+  
+  drawButtons();
+}
+
+void loop() {
+  int32_t x, y;
+  
+  // التحقق من اللمس مباشرة عبر مكتبة LovyanGFX الذكية
+  if (lcd.getTouch(&x, &y)) {
+    
+    // فحص زر ON
+    if ((x >= btnOnX && x <= (btnOnX + btnW)) && (y >= btnY && y <= (btnY + btnH))) {
+      Serial.print('1'); // إرسال نبضة التشغيل فوراً للأردوينو
+      lcd.drawRoundRect(btnOnX, btnY, btnW, btnH, 10, TFT_WHITE);
+      delay(300);
+      drawButtons();
+    }
+    
+    // فحص زر OFF
+    if ((x >= btnOffX && x <= (btnOffX + btnW)) && (y >= btnY && y <= (btnY + btnH))) {
+      Serial.print('0'); // إرسال نبضة الإطفاء فوراً للأردوينو
+      lcd.drawRoundRect(btnOffX, btnY, btnW, btnH, 10, TFT_WHITE);
+      delay(300);
+      drawButtons();
+    }
+  }
+}
+
+
+
+
+
+

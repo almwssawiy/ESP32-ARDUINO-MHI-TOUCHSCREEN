@@ -1,0 +1,35 @@
+#include <SoftwareSerial.h> 
+// RX = 2 , TX = 3 
+SoftwareSerial espSerial(2, 3);
+
+const int ledPin = 13 ; 
+
+void setup()
+{
+  Serial.begin(9600);
+  espSerial.begin(9600);
+
+  pinMode(ledPin,OUTPUT);
+  digitalWrite(ledPin,LOW);
+  Serial.println("--- READY FORN TOUCH SCREEN ---");
+}
+void loop ()
+{
+  if (espSerial.available() > 0 )
+  {
+  char command = espSerial.read ();
+
+Serial.print("Data Received From Screen:");
+Serial.println(command);
+
+
+if (command == '1') 
+{
+  digitalWrite(ledPin, HIGH);
+}
+else if (command == '0')
+{
+digitalWrite(ledPin, LOW);
+}
+}
+}
